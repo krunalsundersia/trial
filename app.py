@@ -187,6 +187,7 @@ def stream():
     if not selected:
         return jsonify(error="No models selected"), 400
     
+    # Only process selected models
     valid = [k for k in selected if k in MODELS]
     if not valid:
         return jsonify(error="No valid models"), 400
@@ -204,6 +205,7 @@ def stream():
         if file_context:
             full_prompt = f"{prompt}\n\nAttached files context:\n{file_context}" if prompt else file_context
 
+        # Only stream for selected models
         for key in valid:
             for chunk in ai_stream(MODELS[key]["sys"], full_prompt, key, get_key(key),
                                      MODELS[key]["model"], counter, GLOBAL_LIMIT, input_tokens):
