@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -8,185 +8,34 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: linear-gradient(135deg, #000, #1a1a2e);
-            color: #fff;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .auth-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            width: 100%;
-        }
-
-        .auth-box {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            width: 400px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .auth-box h2 {
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 2rem;
-            background: linear-gradient(135deg, #64D2FF, #007AFF);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .auth-box input {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .auth-box input:focus {
-            outline: none;
-            border-color: #64D2FF;
-            box-shadow: 0 0 10px rgba(100, 210, 255, 0.3);
-        }
-
-        .auth-box input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .auth-box button {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            background: linear-gradient(135deg, #64D2FF, #007AFF);
-            color: white;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 15px;
-        }
-
-        .auth-box button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(100, 210, 255, 0.4);
-        }
-
-        .auth-box button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .auth-box button.google-btn {
-            background: linear-gradient(135deg, #DB4437, #c23321);
-        }
-
-        .auth-box button.google-btn:hover {
-            box-shadow: 0 5px 15px rgba(219, 68, 55, 0.4);
-        }
-
-        .auth-toggle {
-            text-align: center;
-            margin-top: 20px;
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        .auth-toggle a {
-            color: #64D2FF;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .auth-toggle a:hover {
-            text-decoration: underline;
-        }
-
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 25px 0;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .divider::before,
-        .divider::after {
-            content: "";
-            flex: 1;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .divider span {
-            padding: 0 15px;
-            font-size: 0.9rem;
-        }
-
-        #auth-error-message {
-            color: #ff6b6b;
-            text-align: center;
-            margin-top: 15px;
-            font-size: 0.9rem;
-            min-height: 20px;
-        }
-
-        .phone-auth-section {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .phone-auth-section input {
-            margin-bottom: 10px;
-        }
-
-        #otp-entry-area {
-            margin-top: 15px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        #recaptcha-container {
-            margin-top: 15px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .back-home {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .back-home a {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            font-size: 0.9rem;
-        }
-
-        .back-home a:hover {
-            color: #64D2FF;
-        }
+        /* CSS from previous response (omitted for brevity) */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #000, #1a1a2e); color: #fff; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .auth-container { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100%; }
+        .auth-box { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); padding: 40px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); width: 400px; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .auth-box h2 { text-align: center; margin-bottom: 30px; font-size: 2rem; background: linear-gradient(135deg, #64D2FF, #007AFF); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .auth-box input { width: 100%; padding: 15px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: #fff; font-size: 1rem; transition: all 0.3s ease; }
+        .auth-box input:focus { outline: none; border-color: #64D2FF; box-shadow: 0 0 10px rgba(100, 210, 255, 0.3); }
+        .auth-box input::placeholder { color: rgba(255, 255, 255, 0.6); }
+        .auth-box button { width: 100%; padding: 15px; border: none; border-radius: 8px; background: linear-gradient(135deg, #64D2FF, #007AFF); color: white; font-weight: bold; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px; }
+        .auth-box button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(100, 210, 255, 0.4); }
+        .auth-box button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .auth-box button.google-btn { background: linear-gradient(135deg, #DB4437, #c23321); }
+        .auth-box button.google-btn:hover { box-shadow: 0 5px 15px rgba(219, 68, 55, 0.4); }
+        .auth-toggle { text-align: center; margin-top: 20px; color: rgba(255, 255, 255, 0.8); }
+        .auth-toggle a { color: #64D2FF; text-decoration: none; font-weight: 600; }
+        .auth-toggle a:hover { text-decoration: underline; }
+        .divider { display: flex; align-items: center; margin: 25px 0; color: rgba(255, 255, 255, 0.6); }
+        .divider::before, .divider::after { content: ""; flex: 1; border-bottom: 1px solid rgba(255, 255, 255, 0.3); }
+        .divider span { padding: 0 15px; font-size: 0.9rem; }
+        #auth-error-message { color: #ff6b6b; text-align: center; margin-top: 15px; font-size: 0.9rem; min-height: 20px; }
+        .phone-auth-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.2); }
+        .phone-auth-section input { margin-bottom: 10px; }
+        #otp-entry-area { margin-top: 15px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); }
+        #recaptcha-container { margin-top: 15px; display: flex; justify-content: center; }
+        .back-home { text-align: center; margin-top: 20px; }
+        .back-home a { color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9rem; }
+        .back-home a:hover { color: #64D2FF; }
     </style>
 </head>
 <body>
@@ -242,7 +91,6 @@
         if (typeof firebase !== 'undefined' && !firebase.apps.length) {
             try {
                 firebase.initializeApp(firebaseConfig);
-                console.log("Firebase initialized successfully");
             } catch (error) {
                 console.error("Firebase initialization error:", error);
             }
@@ -270,11 +118,7 @@
                     }
                 });
                 
-                recaptchaVerifier.render().then(widgetId => {
-                    // console.log("reCAPTCHA widget rendered");
-                }).catch(error => {
-                    console.error("reCAPTCHA render error:", error);
-                });
+                recaptchaVerifier.render();
                 
             } catch (error) {
                 console.error("reCAPTCHA initialization error:", error);
@@ -299,12 +143,13 @@
             } catch (error) {
                 console.error("Token post error:", error);
                 document.getElementById('auth-error-message').textContent = error.message;
-                // Force sign out client-side if server token exchange fails
                 firebase.auth().signOut();
             }
         }
 
-        // Email/Password Login
+        // --- AUTHENTICATION HANDLERS ---
+
+        // 1. Email/Password Login
         document.getElementById('auth-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const email = document.getElementById('auth-email').value;
@@ -320,7 +165,6 @@
                 const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
                 await postTokenAndReload(userCredential.user, '/login');
             } catch (error) {
-                console.error("Login error:", error);
                 errorMsg.textContent = error.message.replace('Firebase: ', '');
             } finally {
                 submitBtn.disabled = false;
@@ -328,7 +172,7 @@
             }
         });
 
-        // Google Sign In
+        // 2. Google Sign In
         document.getElementById('google-sign-in-btn').addEventListener('click', async function() {
             const btn = this;
             const errorMsg = document.getElementById('auth-error-message');
@@ -342,15 +186,17 @@
                 const userCredential = await firebase.auth().signInWithPopup(provider);
                 await postTokenAndReload(userCredential.user, '/login');
             } catch (error) {
-                console.error("Google Sign-in error:", error);
-                errorMsg.textContent = error.message.replace('Firebase: ', '');
+                // Handle cases where the popup is closed or blocked
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    errorMsg.textContent = error.message.replace('Firebase: ', '');
+                }
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fab fa-google"></i> Sign in with Google';
             }
         });
 
-        // Phone Authentication: Send OTP
+        // 3. Phone Authentication: Send OTP
         document.getElementById('send-otp-btn').addEventListener('click', async function() {
             const errorMsg = document.getElementById('auth-error-message');
             const phoneNumber = document.getElementById('phone-number-input').value;
@@ -366,7 +212,6 @@
             btn.textContent = "Sending...";
 
             try {
-                // recaptchaVerifier is expected to be defined and rendered
                 confirmationResult = await firebase.auth().signInWithPhoneNumber(phoneNumber, recaptchaVerifier);
                 
                 btn.textContent = "Code Sent!";
@@ -374,16 +219,15 @@
                 errorMsg.textContent = "Verification code sent. Enter it above.";
 
             } catch (error) {
-                console.error("Phone Auth error:", error);
                 errorMsg.textContent = error.message.replace('Firebase: ', '');
                 btn.textContent = "Send OTP";
-                initializeRecaptcha(); // Re-render recaptcha on failure
+                initializeRecaptcha(); 
             } finally {
                 btn.disabled = false;
             }
         });
 
-        // Phone Authentication: Verify OTP
+        // 4. Phone Authentication: Verify OTP
         document.getElementById('verify-otp-btn').addEventListener('click', async function() {
             const errorMsg = document.getElementById('auth-error-message');
             const code = document.getElementById('otp-input').value;
@@ -403,7 +247,6 @@
                 await postTokenAndReload(userCredential.user, '/login');
 
             } catch (error) {
-                console.error("OTP verification error:", error);
                 errorMsg.textContent = "Invalid OTP or session expired. Please try again.";
                 btn.textContent = "Verify OTP & Login";
             } finally {
