@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <link rel="stylesheet" href="style.css"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=css_cachebuster) }}"/>
     <style>
         .timer-display {
             position: absolute; top: 10px; right: 10px; background-color: #ff9500;
@@ -15,6 +15,59 @@
             font-weight: bold; z-index: 1000;
         }
         .timer-display.red { background-color: #ff3b30; }
+        
+        /* Sidebar toggle button */
+        .sidebar-toggle-btn {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 101;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-light);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle-btn:hover {
+            background: var(--logic-color);
+            color: #fff;
+            transform: scale(1.1);
+        }
+
+        /* Logout button at bottom left */
+        .logout-btn-bottom {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 101;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: rgba(255, 59, 48, 0.8);
+            color: white;
+            border: 1px solid rgba(255, 59, 48, 0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn-bottom:hover {
+            background: rgba(255, 59, 48, 1);
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
@@ -22,8 +75,15 @@
         <i class="fas fa-clock"></i> <span id="time-left-text">{{ timer_text }}</span>
     </div>
 
-    <button id="floating-toggle-btn" class="floating-sidebar-btn" title="Toggle Sidebar"> <i class="fas fa-bars"></i> </button>
-    <button id="logout-btn" class="floating-sidebar-btn" title="Logout" style="top: 10px; right: 150px;"> <i class="fas fa-sign-out-alt"></i> </button>
+    <!-- Sidebar Toggle Button -->
+    <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" title="Toggle Sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Logout Button at Bottom Left -->
+    <button id="logout-btn" class="logout-btn-bottom" title="Logout">
+        <i class="fas fa-sign-out-alt"></i>
+    </button>
 
     <header class="model-selector">
         <h1 class="selector-title"></h1>
@@ -41,9 +101,9 @@
     </header>
 
     <div id="chat-app" class="chat-app">
-        <aside class="sidebar" id="sidebar">
+        <aside class="sidebar sidebar-open" id="sidebar">
             <div class="sidebar-header">
-                <h2>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i class="fas fa-history"></i>History</h2>
+                <h2><i class="fas fa-history"></i> History</h2>
                 <div class="search-box">
                     <input type="text" id="history-search" placeholder="Search history…"/>
                     <i class="fas fa-search"></i>
@@ -63,7 +123,7 @@
             </div>
             <div id="history-list" class="history-list"></div>
         </aside>
-        <main class="main-area" id="main-area">
+        <main class="main-area sidebar-open" id="main-area">
             <div class="chat-container" id="chat-container"></div>
             <div class="input-bar">
                 <button id="file-upload-btn" class="btn-file" title="Upload File">
@@ -109,6 +169,7 @@
         const filePreview      = document.getElementById('file-preview');
         const tokensCount      = document.getElementById('tokens-count');
         const logoutBtn        = document.getElementById('logout-btn');
+        const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
         const timerDisplay     = document.getElementById('timer-display');
         const timeLeftText     = document.getElementById('time-left-text');
 
@@ -119,6 +180,7 @@
         let totalTokens      = 0;
         let isFullscreen     = false;
         let timeLimitSeconds = parseInt("{{ time_left_sec }}");
+        let isSidebarOpen    = true;
 
         document.addEventListener('DOMContentLoaded', init);
 
@@ -130,73 +192,94 @@
             updateStatus();
             promptInput.focus();
             fixTextareaHeight();
-            selectAllModels();
+            selectAllModels(); // Select all models by default
             startTimer();
         }
 
         function selectAllModels(){
-          document.querySelectorAll('.model-option').forEach(btn => {
-            const model = btn.dataset.model;
-            selectedModels.add(model);
-            btn.classList.add('selected');
-          });
-          updateStatus();
+            document.querySelectorAll('.model-option').forEach(btn => {
+                const model = btn.dataset.model;
+                selectedModels.add(model);
+                btn.classList.add('selected');
+            });
+            updateStatus();
         }
 
         async function testConnection(){
-          try{
-            const res = await fetch('/health');
-            const data = await res.json();
-            document.getElementById('connection-status').innerHTML = `<div class="connected">✅ Connected! Server status: ${data.status}</div>`;
-          }catch(err){
-            document.getElementById('connection-status').innerHTML = `<div class="error">❌ Connection failed: ${err.message}</div>`;
-          }
+            try{
+                const res = await fetch('/health');
+                const data = await res.json();
+                document.getElementById('connection-status').innerHTML = `<div class="connected">✅ Connected! Server status: ${data.status}</div>`;
+            }catch(err){
+                document.getElementById('connection-status').innerHTML = `<div class="error">❌ Connection failed: ${err.message}</div>`;
+            }
         }
 
         function bindModelSelectors(){
-          document.querySelectorAll('.model-option').forEach(btn=>{
-            btn.addEventListener('click', ()=>{
-              const m = btn.dataset.model;
-              if(selectedModels.has(m)){
-                if(selectedModels.size <= 6){
-                  showStatus('Minimum 6 models must be selected', 'error');
-                  return;
-                }
-                selectedModels.delete(m); 
-                btn.classList.remove('selected');
-              }else{
-                selectedModels.add(m); 
-                btn.classList.add('selected');
-              }
-              updateStatus();
+            document.querySelectorAll('.model-option').forEach(btn=>{
+                btn.addEventListener('click', ()=>{
+                    const m = btn.dataset.model;
+                    if(selectedModels.has(m)){
+                        if(selectedModels.size <= 6){
+                            showStatus('Minimum 6 models must be selected', 'error');
+                            return;
+                        }
+                        selectedModels.delete(m); 
+                        btn.classList.remove('selected');
+                    }else{
+                        selectedModels.add(m); 
+                        btn.classList.add('selected');
+                    }
+                    updateStatus();
+                });
             });
-          });
         }
 
         function bindControls(){
-          askBtn.addEventListener('click', sendMessage);
-          promptInput.addEventListener('keydown', e=>{
-            if(e.key==='Enter' && !e.shiftKey){ 
-              e.preventDefault(); 
-              sendMessage(); 
+            askBtn.addEventListener('click', sendMessage);
+            promptInput.addEventListener('keydown', e=>{
+                if(e.key==='Enter' && !e.shiftKey){ 
+                    e.preventDefault(); 
+                    sendMessage(); 
+                }
+            });
+            
+            promptInput.addEventListener('input', function() {
+                this.style.height = '60px';
+                this.style.height = Math.min(this.scrollHeight, 180) + 'px';
+            });
+            
+            document.getElementById('file-upload-btn').addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFileUpload);
+            document.getElementById('tokens-btn').addEventListener('click', toggleTokensDisplay);
+            document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+            sidebarToggleBtn.addEventListener('click', toggleSidebar);
+            document.getElementById('new-chat-btn').addEventListener('click', startNewChat);
+            document.getElementById('theme-toggle-btn').addEventListener('click', toggleTheme);
+            document.getElementById('history-search').addEventListener('input', e=>filterHistory(e.target.value));
+            
+            logoutBtn.addEventListener('click', handleLogout);
+        }
+
+        function toggleSidebar(){
+            const sidebar = document.getElementById('sidebar');
+            const mainArea = document.getElementById('main-area');
+            
+            isSidebarOpen = !isSidebarOpen;
+            
+            if(isSidebarOpen){
+                sidebar.classList.remove('sidebar-closed');
+                sidebar.classList.add('sidebar-open');
+                mainArea.classList.remove('sidebar-closed');
+                mainArea.classList.add('sidebar-open');
+                sidebarToggleBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            } else {
+                sidebar.classList.remove('sidebar-open');
+                sidebar.classList.add('sidebar-closed');
+                mainArea.classList.remove('sidebar-open');
+                mainArea.classList.add('sidebar-closed');
+                sidebarToggleBtn.innerHTML = '<i class="fas fa-bars"></i>';
             }
-          });
-          
-          promptInput.addEventListener('input', function() {
-            this.style.height = '60px';
-            this.style.height = Math.min(this.scrollHeight, 180) + 'px';
-          });
-          
-          document.getElementById('file-upload-btn').addEventListener('click', () => fileInput.click());
-          fileInput.addEventListener('change', handleFileUpload);
-          document.getElementById('tokens-btn').addEventListener('click', toggleTokensDisplay);
-          document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
-          document.getElementById('floating-toggle-btn').addEventListener('click', toggleSidebar);
-          document.getElementById('new-chat-btn').addEventListener('click', startNewChat);
-          document.getElementById('theme-toggle-btn').addEventListener('click', toggleTheme);
-          document.getElementById('history-search').addEventListener('input', e=>filterHistory(e.target.value));
-          
-          logoutBtn.addEventListener('click', handleLogout);
         }
 
         async function handleLogout() {
@@ -210,40 +293,40 @@
         }
 
         function toggleTokensDisplay(){
-          document.getElementById('tokens-display').classList.toggle('visible');
+            document.getElementById('tokens-display').classList.toggle('visible');
         }
 
         function updateTokensCount(tokens){
-          totalTokens += tokens;
-          let displayText;
-          if(totalTokens >= 1000000){ displayText = (totalTokens / 1000000).toFixed(1) + 'M'; }
-          else if(totalTokens >= 1000){ displayText = (totalTokens / 1000).toFixed(1) + 'k'; }
-          else{ displayText = totalTokens.toString(); }
-          
-          tokensCount.textContent = displayText;
-          tokensCount.style.transform = 'scale(1.1)';
-          setTimeout(() => { tokensCount.style.transform = 'scale(1)'; }, 200);
+            totalTokens += tokens;
+            let displayText;
+            if(totalTokens >= 1000000){ displayText = (totalTokens / 1000000).toFixed(1) + 'M'; }
+            else if(totalTokens >= 1000){ displayText = (totalTokens / 1000).toFixed(1) + 'k'; }
+            else{ displayText = totalTokens.toString(); }
+            
+            tokensCount.textContent = displayText;
+            tokensCount.style.transform = 'scale(1.1)';
+            setTimeout(() => { tokensCount.style.transform = 'scale(1)'; }, 200);
         }
 
         function toggleFullscreen(){
-          if(!isFullscreen){ enterFullscreen(); }else{ exitFullscreen(); }
+            if(!isFullscreen){ enterFullscreen(); }else{ exitFullscreen(); }
         }
 
         function enterFullscreen(){
-          const elem = document.documentElement;
-          if(elem.requestFullscreen){ elem.requestFullscreen(); }
-          else if(elem.webkitRequestFullscreen){ elem.webkitRequestFullscreen(); }
-          else if(elem.msRequestFullscreen){ elem.msRequestFullscreen(); }
-          isFullscreen = true;
-          document.getElementById('fullscreen-btn').innerHTML = '<i class="fas fa-compress"></i>';
+            const elem = document.documentElement;
+            if(elem.requestFullscreen){ elem.requestFullscreen(); }
+            else if(elem.webkitRequestFullscreen){ elem.webkitRequestFullscreen(); }
+            else if(elem.msRequestFullscreen){ elem.msRequestFullscreen(); }
+            isFullscreen = true;
+            document.getElementById('fullscreen-btn').innerHTML = '<i class="fas fa-compress"></i>';
         }
 
         function exitFullscreen(){
-          if(document.exitFullscreen){ document.exitFullscreen(); }
-          else if(document.webkitExitFullscreen){ document.webkitExitFullscreen(); }
-          else if(document.msExitFullscreen){ document.msExitFullscreen(); }
-          isFullscreen = false;
-          document.getElementById('fullscreen-btn').innerHTML = '<i class="fas fa-expand"></i>';
+            if(document.exitFullscreen){ document.exitFullscreen(); }
+            else if(document.webkitExitFullscreen){ document.webkitExitFullscreen(); }
+            else if(document.msExitFullscreen){ document.msExitFullscreen(); }
+            isFullscreen = false;
+            document.getElementById('fullscreen-btn').innerHTML = '<i class="fas fa-expand"></i>';
         }
 
         document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -251,425 +334,419 @@
         document.addEventListener('msfullscreenchange', handleFullscreenChange);
 
         function handleFullscreenChange(){
-          isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
-          document.getElementById('fullscreen-btn').innerHTML = isFullscreen ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
+            isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+            document.getElementById('fullscreen-btn').innerHTML = isFullscreen ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
         }
 
         function handleFileUpload(event) {
-          const files = Array.from(event.target.files);
-          if (files.length === 0) return;
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
 
-          files.forEach(file => {
-            if (file.size > 50 * 1024 * 1024) { 
-              showStatus(`File ${file.name} is too large (max 50MB)`, 'error');
-              return;
-            }
+            files.forEach(file => {
+                if (file.size > 50 * 1024 * 1024) { 
+                    showStatus(`File ${file.name} is too large (max 50MB)`, 'error');
+                    return;
+                }
 
-            const fileId = Date.now() + Math.random().toString(36).substr(2, 9);
-            uploadedFiles.push({
-              id: fileId, file: file, name: file.name, type: file.type, size: file.size
+                const fileId = Date.now() + Math.random().toString(36).substr(2, 9);
+                uploadedFiles.push({
+                    id: fileId, file: file, name: file.name, type: file.type, size: file.size
+                });
+
+                const preview = createFilePreview(fileId, file);
+                filePreview.appendChild(preview);
             });
 
-            const preview = createFilePreview(fileId, file);
-            filePreview.appendChild(preview);
-          });
-
-          fileInput.value = '';
-          updateStatus();
+            fileInput.value = '';
+            updateStatus();
         }
 
         function createFilePreview(fileId, file) {
-          const preview = document.createElement('div');
-          preview.className = 'file-preview-item';
-          preview.dataset.fileId = fileId;
+            const preview = document.createElement('div');
+            preview.className = 'file-preview-item';
+            preview.dataset.fileId = fileId;
 
-          const fileIcon = getFileIcon(file.type, file.name);
-          const fileSize = formatFileSize(file.size);
+            const fileIcon = getFileIcon(file.type, file.name);
+            const fileSize = formatFileSize(file.size);
 
-          preview.innerHTML = `
-            <div class="file-info">
-              <div class="file-icon">${fileIcon}</div>
-              <div class="file-details">
-                <div class="file-name">${escapeHtml(file.name)}</div>
-                <div class="file-size">${fileSize}</div>
-              </div>
-            </div>
-            <button class="file-remove-btn" onclick="removeFile('${fileId}')">
-              <i class="fas fa-times"></i>
-            </button>
-          `;
-          return preview;
+            preview.innerHTML = `
+                <div class="file-info">
+                <div class="file-icon">${fileIcon}</div>
+                <div class="file-details">
+                    <div class="file-name">${escapeHtml(file.name)}</div>
+                    <div class="file-size">${fileSize}</div>
+                </div>
+                </div>
+                <button class="file-remove-btn" onclick="removeFile('${fileId}')">
+                <i class="fas fa-times"></i>
+                </button>
+            `;
+            return preview;
         }
 
         function getFileIcon(fileType, fileName) {
-          if (fileType.startsWith('image/')) return '<i class="fas fa-image"></i>';
-          if (fileType.includes('pdf')) return '<i class="fas fa-file-pdf"></i>';
-          if (fileType.includes('word') || fileName.endsWith('.doc') || fileName.endsWith('.docx')) return '<i class="fas fa-file-word"></i>';
-          if (fileName.endsWith('.txt')) return '<i class="fas fa-file-alt"></i>';
-          return '<i class="fas fa-file"></i>';
+            if (fileType.startsWith('image/')) return '<i class="fas fa-image"></i>';
+            if (fileType.includes('pdf')) return '<i class="fas fa-file-pdf"></i>';
+            if (fileType.includes('word') || fileName.endsWith('.doc') || fileName.endsWith('.docx')) return '<i class="fas fa-file-word"></i>';
+            if (fileName.endsWith('.txt')) return '<i class="fas fa-file-alt"></i>';
+            return '<i class="fas fa-file"></i>';
         }
 
         function formatFileSize(bytes) {
-          if (bytes === 0) return '0 Bytes';
-          const k = 1024;
-          const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-          const i = Math.floor(Math.log(bytes) / Math.log(k));
-          return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
         window.removeFile = function(fileId) {
-          uploadedFiles = uploadedFiles.filter(f => f.id !== fileId);
-          const preview = document.querySelector(`.file-preview-item[data-file-id="${fileId}"]`);
-          if (preview) preview.remove();
-          updateStatus();
+            uploadedFiles = uploadedFiles.filter(f => f.id !== fileId);
+            const preview = document.querySelector(`.file-preview-item[data-file-id="${fileId}"]`);
+            if (preview) preview.remove();
+            updateStatus();
         }
 
         function fixTextareaHeight(){
-          promptInput.style.height = '60px';
-          promptInput.style.minHeight = '60px';
-          promptInput.style.maxHeight = '180px';
-          promptInput.style.overflowY = 'auto';
+            promptInput.style.height = '60px';
+            promptInput.style.minHeight = '60px';
+            promptInput.style.maxHeight = '180px';
+            promptInput.style.overflowY = 'auto';
         }
 
         function updateStatus(){
-          if(selectedModels.size < 6){
-            statusBox.textContent = `Select at least ${6 - selectedModels.size} more model(s) to start chatting (min 6 required)`;
-            statusBox.className = 'status error';
-          }else{
-            const fileCount = uploadedFiles.length;
-            const fileText = fileCount > 0 ? ` - ${fileCount} file(s) attached` : '';
-            statusBox.textContent = `Ready – ${selectedModels.size} model(s) selected${fileText}`;
-            statusBox.className = 'status';
-          }
-        }
-        
-        function toggleSidebar(){
-          const sidebar = document.getElementById('sidebar');
-          const mainArea= document.getElementById('main-area');
-          const isOpen  = sidebar.classList.toggle('sidebar-open');
-          sidebar.classList.toggle('sidebar-closed', !isOpen);
-          mainArea.classList.toggle('sidebar-open', isOpen);
-          mainArea.classList.toggle('sidebar-closed', !isOpen);
+            if(selectedModels.size < 6){
+                statusBox.textContent = `Select at least ${6 - selectedModels.size} more model(s) to start chatting (min 6 required)`;
+                statusBox.className = 'status error';
+            }else{
+                const fileCount = uploadedFiles.length;
+                const fileText = fileCount > 0 ? ` - ${fileCount} file(s) attached` : '';
+                statusBox.textContent = `Ready – ${selectedModels.size} model(s) selected${fileText}`;
+                statusBox.className = 'status';
+            }
         }
         
         function toggleTheme(){
-          document.body.classList.toggle('light-theme');
-          const icon = document.getElementById('theme-toggle-btn').querySelector('i');
-          icon.classList.toggle('fa-moon'); 
-          icon.classList.toggle('fa-sun');
+            document.body.classList.toggle('light-theme');
+            const icon = document.getElementById('theme-toggle-btn').querySelector('i');
+            icon.classList.toggle('fa-moon'); 
+            icon.classList.toggle('fa-sun');
         }
         
         function startNewChat(){
-          if(currentController){ currentController.abort(); currentController=null; }
-          chatContainer.innerHTML = '';
-          filePreview.innerHTML = '';
-          uploadedFiles = [];
-          welcomeBox.style.display = 'flex';
-          promptInput.value=''; 
-          updateStatus();
-          fixTextareaHeight();
-          currentPrompt = "";
+            if(currentController){ currentController.abort(); currentController=null; }
+            chatContainer.innerHTML = '';
+            filePreview.innerHTML = '';
+            uploadedFiles = [];
+            welcomeBox.style.display = 'flex';
+            promptInput.value=''; 
+            updateStatus();
+            fixTextareaHeight();
+            currentPrompt = "";
         }
 
         function showStatus(message, type = 'info') {
-          statusBox.textContent = message;
-          statusBox.className = `status ${type}`;
-          setTimeout(() => { updateStatus(); }, 3000);
+            statusBox.textContent = message;
+            statusBox.className = `status ${type}`;
+            setTimeout(() => { updateStatus(); }, 3000);
         }
 
         async function sendMessage(){
-          if (timeLimitSeconds <= 0) { showStatus('Trial Expired. Please contact support.', 'error'); return; }
-          
-          const prompt = promptInput.value.trim();
-          if(!prompt && uploadedFiles.length === 0){ showStatus('Please enter a message or upload a file', 'error'); return; }
-          if(selectedModels.size < 6){ showStatus(`Please select at least 6 AI models (currently ${selectedModels.size})`, 'error'); return; }
-
-          currentPrompt = prompt;
-          welcomeBox.style.display = 'none';
-          addMessage('user', prompt, uploadedFiles);
-          
-          promptInput.value='';
-          askBtn.disabled = true; promptInput.disabled = true; fileUploadBtn.disabled = true;
-          statusBox.textContent = 'Sending to AI models…';
-          fixTextareaHeight();
-
-          saveToHistory(prompt);
-
-          const responseGroup = createResponseGroup();
-          chatContainer.appendChild(responseGroup);
-          scrollToBottom();
-
-          currentController = new AbortController();
-          let tokensThisRequest = 0;
-
-          try{
-            const formData = new FormData();
-            formData.append('prompt', prompt);
-            formData.append('selected_models', JSON.stringify(Array.from(selectedModels)));
-            uploadedFiles.forEach(fileObj => {
-              formData.append('files', fileObj.file, fileObj.name);
-            });
+            if (timeLimitSeconds <= 0) { showStatus('Trial Expired. Please contact support.', 'error'); return; }
             
-            const res = await fetch('/stream', {
-              method : 'POST', body   : formData, signal : currentController.signal
-            });
+            const prompt = promptInput.value.trim();
+            if(!prompt && uploadedFiles.length === 0){ showStatus('Please enter a message or upload a file', 'error'); return; }
+            if(selectedModels.size < 6){ showStatus(`Please select at least 6 AI models (currently ${selectedModels.size})`, 'error'); return; }
+
+            currentPrompt = prompt;
+            welcomeBox.style.display = 'none';
+            addMessage('user', prompt, uploadedFiles);
             
-            if(!res.ok) {
-              const errorData = await res.json().catch(() => ({ error: res.statusText }));
-              throw new Error(`Server error ${res.status}: ${errorData.error}`);
-            }
+            promptInput.value='';
+            askBtn.disabled = true; promptInput.disabled = true; fileUploadBtn.disabled = true;
+            statusBox.textContent = 'Sending to AI models…';
+            fixTextareaHeight();
 
-            const reader = res.body.getReader(); 
-            const decoder = new TextDecoder(); 
-            let buffer = ''; 
-            const buffers = {};
-            selectedModels.forEach(m => buffers[m] = '');
+            saveToHistory(prompt);
 
-            while(true){
-              const {done, value} = await reader.read(); 
-              if(done) break;
-              
-              buffer += decoder.decode(value, {stream:true}); 
-              const lines = buffer.split('\n'); 
-              buffer = lines.pop() || '';
-              
-              for(const line of lines){
-                if(line.trim()==='' || !line.startsWith('data: ')) continue;
-                const jsonStr = line.slice(6).trim();
-                if(jsonStr==='') continue;
+            const responseGroup = createResponseGroup();
+            chatContainer.appendChild(responseGroup);
+            scrollToBottom();
+
+            currentController = new AbortController();
+            let tokensThisRequest = 0;
+
+            try{
+                const formData = new FormData();
+                formData.append('prompt', prompt);
+                formData.append('selected_models', JSON.stringify(Array.from(selectedModels))); // Send only selected models
+                uploadedFiles.forEach(fileObj => {
+                    formData.append('files', fileObj.file, fileObj.name);
+                });
                 
-                try{
-                  const data = JSON.parse(jsonStr);
+                const res = await fetch('/stream', {
+                    method : 'POST', body   : formData, signal : currentController.signal
+                });
+                
+                if(!res.ok) {
+                    const errorData = await res.json().catch(() => ({ error: res.statusText }));
+                    throw new Error(`Server error ${res.status}: ${errorData.error}`);
+                }
 
-                  if(data.overall==='done'){
-                    statusBox.textContent='All responses completed!';
-                    selectedModels.forEach(m=>{
-                      const thinking = responseGroup.querySelector(`.${m}-thinking`);
-                      if(thinking) thinking.style.display='none';
-                    });
-                    if(tokensThisRequest > 0){ updateTokensCount(tokensThisRequest); }
-                    filePreview.innerHTML = ''; uploadedFiles = [];
-                    injectAskLurk(responseGroup, currentPrompt);
-                    continue;
-                  }
+                const reader = res.body.getReader(); 
+                const decoder = new TextDecoder(); 
+                let buffer = ''; 
+                const buffers = {};
+                // Initialize buffers only for selected models
+                selectedModels.forEach(m => buffers[m] = '');
 
-                  if(data.bot){
-                    const target = responseGroup.querySelector(`#resp-${data.bot}`);
-                    const think  = responseGroup.querySelector(`.${data.bot}-thinking`);
+                while(true){
+                    const {done, value} = await reader.read(); 
+                    if(done) break;
+                    
+                    buffer += decoder.decode(value, {stream:true}); 
+                    const lines = buffer.split('\n'); 
+                    buffer = lines.pop() || '';
+                    
+                    for(const line of lines){
+                        if(line.trim()==='' || !line.startsWith('data: ')) continue;
+                        const jsonStr = line.slice(6).trim();
+                        if(jsonStr==='') continue;
+                        
+                        try{
+                            const data = JSON.parse(jsonStr);
 
-                    if(data.error){
-                      if(target) { target.innerHTML=`<div class="error-banner">⚠️ ${data.error}</div>`; target.style.color = '#ff6b6b'; }
-                      if(think)  think.style.display='none';
-                    }else if(data.text){
-                      buffers[data.bot] += data.text;
-                      if(target) { target.textContent = buffers[data.bot]; target.style.color = ''; }
-                      if(think && buffers[data.bot].length > 5) think.style.display='none';
-                      if(data.tokens && data.tokens > 0){ tokensThisRequest += data.tokens; }
-                    }else if(data.done){
-                      if(think) think.style.display='none';
+                            if(data.overall==='done'){
+                                statusBox.textContent='All responses completed!';
+                                // Only hide thinking indicators for selected models
+                                selectedModels.forEach(m=>{
+                                    const thinking = responseGroup.querySelector(`.${m}-thinking`);
+                                    if(thinking) thinking.style.display='none';
+                                });
+                                if(tokensThisRequest > 0){ updateTokensCount(tokensThisRequest); }
+                                filePreview.innerHTML = ''; uploadedFiles = [];
+                                injectAskLurk(responseGroup, currentPrompt);
+                                continue;
+                            }
+
+                            if(data.bot && selectedModels.has(data.bot)){ // Only process if model is selected
+                                const target = responseGroup.querySelector(`#resp-${data.bot}`);
+                                const think  = responseGroup.querySelector(`.${data.bot}-thinking`);
+
+                                if(data.error){
+                                    if(target) { target.innerHTML=`<div class="error-banner">⚠️ ${data.error}</div>`; target.style.color = '#ff6b6b'; }
+                                    if(think)  think.style.display='none';
+                                }else if(data.text){
+                                    buffers[data.bot] += data.text;
+                                    if(target) { target.textContent = buffers[data.bot]; target.style.color = ''; }
+                                    if(think && buffers[data.bot].length > 5) think.style.display='none';
+                                    if(data.tokens && data.tokens > 0){ tokensThisRequest += data.tokens; }
+                                }else if(data.done){
+                                    if(think) think.style.display='none';
+                                }
+                                scrollToBottom();
+                            }
+                        }catch(parseErr){ }
                     }
-                    scrollToBottom();
-                  }
-                }catch(parseErr){ }
-              }
+                }
+            }catch(err){
+                if(err.name==='AbortError'){ statusBox.textContent='Request cancelled'; }
+                else{ statusBox.textContent=`Error: ${err.message}`; addMessage('error', `Failed to get responses: ${err.message}`); }
+            }finally{
+                askBtn.disabled = false; promptInput.disabled = false; fileUploadBtn.disabled = false;
+                promptInput.focus(); currentController = null; updateStatus();
             }
-          }catch(err){
-            if(err.name==='AbortError'){ statusBox.textContent='Request cancelled'; }
-            else{ statusBox.textContent=`Error: ${err.message}`; addMessage('error', `Failed to get responses: ${err.message}`); }
-          }finally{
-            askBtn.disabled = false; promptInput.disabled = false; fileUploadBtn.disabled = false;
-            promptInput.focus(); currentController = null; updateStatus();
-          }
         }
 
         function addMessage(role, content, files = []){
-          const div = document.createElement('div'); 
-          div.className = `message ${role}-message`;
-          
-          let fileHTML = '';
-          if (files.length > 0) {
-            fileHTML = `
-              <div class="attached-files">
-                <div class="files-label">Attached files:</div>
-                ${files.map(file => `
-                  <div class="file-attachment">
-                    <span class="file-icon">${getFileIcon(file.type, file.name)}</span>
-                    <span class="file-name">${escapeHtml(file.name)}</span>
-                    <span class="file-size">(${formatFileSize(file.size)})</span>
-                  </div>
-                `).join('')}
-              </div>
-            `;
-          }
-          div.innerHTML = `
-            <div class="avatar">${role==='user'?'👤':'⚠️'}</div>
-            <div class="message-content">
-              <div class="bubble">${escapeHtml(content)}</div>
-              ${fileHTML}
-            </div>`;
-          chatContainer.appendChild(div); 
-          scrollToBottom();
+            const div = document.createElement('div'); 
+            div.className = `message ${role}-message`;
+            
+            let fileHTML = '';
+            if (files.length > 0) {
+                fileHTML = `
+                <div class="attached-files">
+                    <div class="files-label">Attached files:</div>
+                    ${files.map(file => `
+                    <div class="file-attachment">
+                        <span class="file-icon">${getFileIcon(file.type, file.name)}</span>
+                        <span class="file-name">${escapeHtml(file.name)}</span>
+                        <span class="file-size">(${formatFileSize(file.size)})</span>
+                    </div>
+                    `).join('')}
+                </div>
+                `;
+            }
+            div.innerHTML = `
+                <div class="avatar">${role==='user'?'👤':'⚠️'}</div>
+                <div class="message-content">
+                <div class="bubble">${escapeHtml(content)}</div>
+                ${fileHTML}
+                </div>`;
+            chatContainer.appendChild(div); 
+            scrollToBottom();
         }
 
         function injectAskLurk(responseGroup, prompt){
-          const asklurkContainer = document.createElement('div');
-          asklurkContainer.className = 'asklurk-container';
-          
-          const btnRow = document.createElement('div');
-          btnRow.className = 'asklurk-row';
-          btnRow.innerHTML = `<button class="asklurk-btn" title="Merge & pick best answer from these responses"><i class="fas fa-star"></i> AskLurk - Find Best Answer</button>`;
+            const asklurkContainer = document.createElement('div');
+            asklurkContainer.className = 'asklurk-container';
+            
+            const btnRow = document.createElement('div');
+            btnRow.className = 'asklurk-row';
+            btnRow.innerHTML = `<button class="asklurk-btn" title="Merge & pick best answer from these responses"><i class="fas fa-star"></i> AskLurk - Find Best Answer</button>`;
 
-          const bestRow = document.createElement('div');
-          bestRow.className = 'best-answer-row';
-          bestRow.style.display = 'none';
-          
-          asklurkContainer.appendChild(btnRow);
-          asklurkContainer.appendChild(bestRow);
-          
-          responseGroup.parentNode.insertBefore(asklurkContainer, responseGroup.nextSibling);
+            const bestRow = document.createElement('div');
+            bestRow.className = 'best-answer-row';
+            bestRow.style.display = 'none';
+            
+            asklurkContainer.appendChild(btnRow);
+            asklurkContainer.appendChild(bestRow);
+            
+            responseGroup.parentNode.insertBefore(asklurkContainer, responseGroup.nextSibling);
 
-          const asklurkBtn = btnRow.querySelector('.asklurk-btn');
-          asklurkBtn.addEventListener('click', async function() {
-            await handleAsklurkClick(this, responseGroup, bestRow, prompt);
-          });
+            const asklurkBtn = btnRow.querySelector('.asklurk-btn');
+            asklurkBtn.addEventListener('click', async function() {
+                await handleAsklurkClick(this, responseGroup, bestRow, prompt);
+            });
         }
 
         async function handleAsklurkClick(button, responseGroup, bestRow, prompt) {
-          button.disabled = true;
-          button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing responses...';
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing responses...';
 
-          const answers = {};
-          responseGroup.querySelectorAll('.ai-card').forEach(card => {
-            const modelId = card.id.replace('card-', '');
-            if (MODEL_CONFIG[modelId]) {
-              const answerText = card.querySelector('.response-display')?.textContent?.trim() || '';
-              if (answerText && !answerText.includes('⚠️')) { answers[modelId] = answerText; }
-            }
-          });
-
-          if (Object.keys(answers).length === 0) {
-            button.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No answers to analyze';
-            setTimeout(() => { button.innerHTML = '<i class="fas fa-star"></i> AskLurk - Find Best Answer'; button.disabled = false; }, 2000);
-            return;
-          }
-
-          try {
-            const res = await fetch('/asklurk', {
-              method: 'POST', headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({ answers: answers, prompt: prompt })
+            const answers = {};
+            responseGroup.querySelectorAll('.ai-card').forEach(card => {
+                const modelId = card.id.replace('card-', '');
+                if (MODEL_CONFIG[modelId] && selectedModels.has(modelId)) { // Only include selected models
+                    const answerText = card.querySelector('.response-display')?.textContent?.trim() || '';
+                    if (answerText && !answerText.includes('⚠️')) { answers[modelId] = answerText; }
+                }
             });
-            
-            const data = await res.json();
-            
-            if (data.best) {
-              bestRow.innerHTML = `
-                <div class="ai-card asklurk-best">
-                  <div class="card-header">
-                    <div class="badge" style="background: linear-gradient(135deg, #ffd700, #ffb700); color: #000;">
-                      <i class="fas fa-crown"></i> AskLurk Best Answer
-                      ${data.best_model ? `(from ${data.best_model.toUpperCase()})` : ''}
-                    </div>
-                  </div>
-                  <div class="response-display">${escapeHtml(data.best)}</div>
-                </div>`;
-              
-              bestRow.style.display = 'flex';
-              button.innerHTML = '<i class="fas fa-check"></i> Analysis Complete';
-              button.style.background = 'linear-gradient(135deg, #34c759, #28a745)';
-              scrollToBottom();
-            } else if (data.error) {
-              throw new Error(data.error);
-            } else {
-              throw new Error('No best answer returned');
+
+            if (Object.keys(answers).length === 0) {
+                button.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No answers to analyze';
+                setTimeout(() => { button.innerHTML = '<i class="fas fa-star"></i> AskLurk - Find Best Answer'; button.disabled = false; }, 2000);
+                return;
             }
-          } catch (err) {
-            console.error('AskLurk error:', err);
-            button.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Analysis Failed';
-            button.style.background = 'linear-gradient(135deg, #ff3b30, #d70015)';
-            
-            setTimeout(() => {
-              button.innerHTML = '<i class="fas fa-star"></i> AskLurk - Find Best Answer';
-              button.style.background = 'linear-gradient(135deg, #ffd700, #ffb700)';
-              button.disabled = false;
-            }, 3000);
-          }
+
+            try {
+                const res = await fetch('/asklurk', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ answers: answers, prompt: prompt })
+                });
+                
+                const data = await res.json();
+                
+                if (data.best) {
+                    bestRow.innerHTML = `
+                    <div class="ai-card asklurk-best">
+                        <div class="card-header">
+                        <div class="badge" style="background: linear-gradient(135deg, #ffd700, #ffb700); color: #000;">
+                            <i class="fas fa-crown"></i> AskLurk Best Answer
+                            ${data.best_model ? `(from ${data.best_model.toUpperCase()})` : ''}
+                        </div>
+                        </div>
+                        <div class="response-display">${escapeHtml(data.best)}</div>
+                    </div>`;
+                    
+                    bestRow.style.display = 'flex';
+                    button.innerHTML = '<i class="fas fa-check"></i> Analysis Complete';
+                    button.style.background = 'linear-gradient(135deg, #34c759, #28a745)';
+                    scrollToBottom();
+                } else if (data.error) {
+                    throw new Error(data.error);
+                } else {
+                    throw new Error('No best answer returned');
+                }
+            } catch (err) {
+                console.error('AskLurk error:', err);
+                button.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Analysis Failed';
+                button.style.background = 'linear-gradient(135deg, #ff3b30, #d70015)';
+                
+                setTimeout(() => {
+                    button.innerHTML = '<i class="fas fa-star"></i> AskLurk - Find Best Answer';
+                    button.style.background = 'linear-gradient(135deg, #ffd700, #ffb700)';
+                    button.disabled = false;
+                }, 3000);
+            }
         }
 
         function createResponseGroup(){
-          const group = document.createElement('div'); group.className = 'response-group';
-          const inner = document.createElement('div'); inner.className = 'ai-pair';
-          group.appendChild(inner);
+            const group = document.createElement('div'); group.className = 'response-group';
+            const inner = document.createElement('div'); inner.className = 'ai-pair';
+            group.appendChild(inner);
 
-          selectedModels.forEach(m => {
-            const cfg = MODEL_CONFIG[m];
-            inner.insertAdjacentHTML('beforeend',`
-              <div class="ai-card thinking" id="card-${m}">
-                <div class="card-header"><div class="badge" style="background:${cfg.color}">${cfg.icon} ${cfg.name}</div></div>
-                <div class="thinking-container ${m}-thinking active">
-                  <div class="thinking-dots"><span></span><span></span><span></span></div>
-                  <div class="thinking-text">${cfg.name} is thinking…</div>
-                </div>
-                <div class="response-display ${m}-response" id="resp-${m}"></div>
-              </div>`);
-          });
-          return group;
+            // Only create cards for selected models
+            selectedModels.forEach(m => {
+                const cfg = MODEL_CONFIG[m];
+                inner.insertAdjacentHTML('beforeend',`
+                <div class="ai-card thinking" id="card-${m}">
+                    <div class="card-header"><div class="badge" style="background:${cfg.color}">${cfg.icon} ${cfg.name}</div></div>
+                    <div class="thinking-container ${m}-thinking active">
+                    <div class="thinking-dots"><span></span><span></span><span></span></div>
+                    <div class="thinking-text">${cfg.name} is thinking…</div>
+                    </div>
+                    <div class="response-display ${m}-response" id="resp-${m}"></div>
+                </div>`);
+            });
+            return group;
         }
 
         function scrollToBottom(){
-          setTimeout(() => { chatContainer.scrollTop = chatContainer.scrollHeight; }, 100);
+            setTimeout(() => { chatContainer.scrollTop = chatContainer.scrollHeight; }, 100);
         }
 
         function escapeHtml(text){
-          const div = document.createElement('div'); div.textContent = text; return div.innerHTML;
+            const div = document.createElement('div'); div.textContent = text; return div.innerHTML;
         }
 
         function saveToHistory(prompt){
-          const item = { id: Date.now(), prompt, models: Array.from(selectedModels), timestamp: new Date().toLocaleString() };
-          chatHistory.unshift(item);
-          if(chatHistory.length > 50) chatHistory = chatHistory.slice(0,50);
-          localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-          renderHistory();
+            const item = { id: Date.now(), prompt, models: Array.from(selectedModels), timestamp: new Date().toLocaleString() };
+            chatHistory.unshift(item);
+            if(chatHistory.length > 50) chatHistory = chatHistory.slice(0,50);
+            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+            renderHistory();
         }
 
         function loadChatHistory(){
-          const saved = localStorage.getItem('chatHistory');
-          if(saved) chatHistory = JSON.parse(saved);
-          renderHistory();
+            const saved = localStorage.getItem('chatHistory');
+            if(saved) chatHistory = JSON.parse(saved);
+            renderHistory();
         }
 
         function renderHistory(){
-          const list = document.getElementById('history-list');
-          list.innerHTML = chatHistory.map(it => `
-            <div class="history-item" data-id="${it.id}">
-              <div class="history-prompt">${it.prompt.substring(0,100)}${it.prompt.length>100?'…':''}</div>
-              <div class="history-meta"><span class="history-time">${it.timestamp}</span><span class="history-models">${it.models.length} models</span></div>
-            </div>`).join('');
+            const list = document.getElementById('history-list');
+            list.innerHTML = chatHistory.map(it => `
+                <div class="history-item" data-id="${it.id}">
+                <div class="history-prompt">${it.prompt.substring(0,100)}${it.prompt.length>100?'…':''}</div>
+                <div class="history-meta"><span class="history-time">${it.timestamp}</span><span class="history-models">${it.models.length} models</span></div>
+                </div>`).join('');
 
-          list.querySelectorAll('.history-item').forEach(item => {
-            item.addEventListener('click', () => {
-              const h = chatHistory.find(c => c.id === parseInt(item.dataset.id));
-              if(h){
-                startNewChat(); 
-                promptInput.value = h.prompt;
-                selectedModels.clear(); 
-                document.querySelectorAll('.model-option').forEach(b => b.classList.remove('selected'));
-                h.models.forEach(m => {
-                  selectedModels.add(m);
-                  document.querySelector(`[data-model="${m}"]`)?.classList.add('selected');
+            list.querySelectorAll('.history-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const h = chatHistory.find(c => c.id === parseInt(item.dataset.id));
+                    if(h){
+                        startNewChat(); 
+                        promptInput.value = h.prompt;
+                        selectedModels.clear(); 
+                        document.querySelectorAll('.model-option').forEach(b => b.classList.remove('selected'));
+                        h.models.forEach(m => {
+                            selectedModels.add(m);
+                            document.querySelector(`[data-model="${m}"]`)?.classList.add('selected');
+                        });
+                        updateStatus();
+                    }
                 });
-                updateStatus();
-              }
             });
-          });
         }
 
         function filterHistory(keyword){
-          const items = document.querySelectorAll('.history-item');
-          const lw = keyword.toLowerCase();
-          items.forEach(it => {
-            const txt = it.querySelector('.history-prompt').textContent.toLowerCase();
-            it.style.display = txt.includes(lw) ? 'flex' : 'none';
-          });
+            const items = document.querySelectorAll('.history-item');
+            const lw = keyword.toLowerCase();
+            items.forEach(it => {
+                const txt = it.querySelector('.history-prompt').textContent.toLowerCase();
+                it.style.display = txt.includes(lw) ? 'flex' : 'none';
+            });
         }
 
         function startTimer() {
@@ -706,5 +783,4 @@
         }
     </script>
 </body>
-
 </html>
