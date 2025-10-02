@@ -57,8 +57,7 @@ MODELS = {
 def login_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            if request.path in ["/stream", "/asklurk"]:
-                return jsonify(error="Authentication required."), 401
+            # For all routes, redirect to login if not authenticated
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     decorated_function.__name__ = f.__name__
@@ -90,8 +89,19 @@ def get_time_limit_status():
             return "seconds", f"{seconds_left} sec left", total_seconds
     return "unknown", "No active trial", 0.0
 
+@app.route("/")
+def index():
+    # Redirect to login if not authenticated, otherwise to chat
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return redirect(url_for('chat'))
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    # If already logged in, redirect to chat
+    if 'user_id' in session:
+        return redirect(url_for('chat'))
+        
     if request.method == "GET":
         return render_template("login.html")
     
@@ -115,6 +125,10 @@ def login():
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
+    # If already logged in, redirect to chat
+    if 'user_id' in session:
+        return redirect(url_for('chat'))
+        
     if request.method == "GET":
         return render_template("signup.html")
     
@@ -135,24 +149,23 @@ def signup():
         logging.error(f"Firebase token verification failed: {e}")
         return jsonify({"error": "Invalid token or authentication failed"}), 401
 
-@app.route("/logout", methods=["POST"])
+@app.route("/chat")
 @login_required
-def logout():
-    session.pop('user_id', None)
-    session.pop('signup_time', None)
-    return jsonify({"message": "Logged out successfully"}), 200
-
-@app.route("/")
-@login_required
-def index():
+def chat():
     status, timer_text, time_left_sec = get_time_limit_status()
     
     return render_template("index.html", 
         css_cachebuster=secrets.token_hex(4),
-        is_authenticated=('user_id' in session),
+        is_authenticated=True,
         timer_text=timer_text,
         time_left_sec=time_left_sec
     )
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.pop('user_id', None)
+    session.pop('signup_time', None)
+    return jsonify({"message": "Logged out successfully"}), 200
 
 @app.route("/health")
 @login_required
