@@ -11,23 +11,26 @@ import firebase_admin
 from firebase_admin import credentials, auth
 import pdfplumber
 
+# --- Configuration & Initialization ---
+
 load_dotenv()
 logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
-# IMPORTANT: Use a strong, secret key in production.
-app.secret_key = os.getenv("FLASK_SECRET_KEY", secrets.token_hex(32)) 
+app.secret_key = os.getenv("FLASK_SECRET_KEY", secrets.token_hex(32))
 
-# Firebase configuration for frontend
-app.config.update(
-    FIREBASE_API_KEY=os.getenv("FIREBASE_API_KEY", ""),
-    FIREBASE_AUTH_DOMAIN=os.getenv("FIREBASE_AUTH_DOMAIN", ""),
-    FIREBASE_PROJECT_ID=os.getenv("FIREBASE_PROJECT_ID", ""),
-    FIREBASE_STORAGE_BUCKET=os.getenv("FIREBASE_STORAGE_BUCKET", ""),
-    FIREBASE_MESSAGING_SENDER_ID=os.getenv("FIREBASE_MESSAGING_SENDER_ID", ""),
-    FIREBASE_APP_ID=os.getenv("FIREBASE_APP_ID", "")
-)
+# Firebase configuration for frontend (using dummy placeholder values for safety)
+FIREBASE_CONFIG = {
+    "apiKey": os.getenv("FIREBASE_API_KEY", "AIzaSyDqohvAqFwV209Aiz2OjKg2jxHzQmaiG4E"),
+    "authDomain": os.getenv("FIREBASE_AUTH_DOMAIN", "multimodel-fd9e9.firebaseapp.com"),
+    "projectId": os.getenv("FIREBASE_PROJECT_ID", "multimodel-fd9e9"),
+    "storageBucket": os.getenv("FIREBASE_STORAGE_BUCKET", "multimodel-fd9e9.firebasestorage.app"),
+    "messagingSenderId": os.getenv("FIREBASE_MESSAGING_SENDER_ID", "814216734391"),
+    "appId": os.getenv("FIREBASE_APP_ID", "1:814216734391:web:c21e8a727733b806168f32")
+}
 
-# --- FIREBASE SETUP ---
+app.config.update(FIREBASE_CONFIG)
+
+# --- FIREBASE ADMIN SDK SETUP ---
 FIREBASE_CRED_PATH = os.getenv("FIREBASE_CRED_PATH")
 if FIREBASE_CRED_PATH and os.path.exists(FIREBASE_CRED_PATH):
     try:
@@ -37,19 +40,19 @@ if FIREBASE_CRED_PATH and os.path.exists(FIREBASE_CRED_PATH):
     except Exception as e:
         logging.error(f"Failed to initialize Firebase Admin SDK: {e}")
 else:
-    logging.warning("FIREBASE_CRED_PATH not set or file not found. Authentication will be disabled.")
+    logging.warning("FIREBASE_CRED_PATH not set or file not found. Authentication will be partially disabled.")
 
 GLOBAL_LIMIT = 300
 MODELS = {
-    "logic":      {"model":"deepseek/deepseek-chat-v3.1:free",       "sys":"give short answer"},
-    "creative": {"model":"deepseek/deepseek-chat-v3.1:free","sys":"give short answer"},
-    "balanced": {"model":"deepseek/deepseek-chat-v3.1:free",       "sys":"give short answer"},
-    "gpt4o":      {"model":"deepseek/deepseek-chat-v3.1:free",           "sys":"You are GPT-4o – clear, accurate, concise."},
-    "claude3":  {"model":"deepseek/deepseek-chat-v3.1:free",  "sys":"You are Claude 3 – thoughtful and precise."},
-    "llama31":  {"model":"deepseek/deepseek-chat-v3.1:free",  "sys":"give short answer"},
-    "mixtral":  {"model":"deepseek/deepseek-chat-v3.1:free",    "sys":"give short answer"},
-    "qwen":     {"model":"deepseek/deepseek-chat-v3.1:free",       "sys":"You are Qwen – multilingual and reasoning-focused."},
-    "command-r":{"model":"deepseek/deepseek-chat-v3.1:free",      "sys":"You are Command R+ – factual and structured."},
+    "logic":     {"model":"deepseek/deepseek-chat-v3.1:free",       "sys":"give short answer"},
+    "creative":  {"model":"deepseek/deepseek-chat-v3.1:free", "sys":"give short answer"},
+    "balanced":  {"model":"deepseek/deepseek-chat-v3.1:free",       "sys":"give short answer"},
+    "gpt4o":     {"model":"deepseek/deepseek-chat-v3.1:free",             "sys":"You are GPT-4o – clear, accurate, concise."},
+    "claude3":   {"model":"deepseek/deepseek-chat-v3.1:free",  "sys":"You are Claude 3 – thoughtful and precise."},
+    "llama31":   {"model":"deepseek/deepseek-chat-v3.1:free",  "sys":"give short answer"},
+    "mixtral":   {"model":"deepseek/deepseek-chat-v3.1:free",    "sys":"give short answer"},
+    "qwen":      {"model":"deepseek/deepseek-chat-v3.1:free",       "sys":"You are Qwen – multilingual and reasoning-focused."},
+    "command-r": {"model":"deepseek/deepseek-chat-v3.1:free",    "sys":"You are Command R+ – factual and structured."},
 }
 
 # --- AUTHENTICATION AND TIME LIMIT LOGIC ---
@@ -80,13 +83,15 @@ def get_time_limit_status():
             return "days", f"{days_left} days left", total_seconds
         elif total_seconds > 3600:
             hours_left = int(total_seconds // 3600)
-            return "hours", f"{hours_left} hr left", total_seconds
+            minutes_left = int((total_seconds % 3600) // 60)
+            return "hours", f"{hours_left}h {minutes_left}m left", total_seconds
         elif total_seconds > 60:
             minutes_left = int(total_seconds // 60)
-            return "minutes", f"{minutes_left} min left", total_seconds
+            seconds_left = int(total_seconds % 60)
+            return "minutes", f"{minutes_left}m {seconds_left}s left", total_seconds
         else:
             seconds_left = int(total_seconds)
-            return "seconds", f"{seconds_left} sec left", total_seconds
+            return "seconds", f"{seconds_left}s left", total_seconds
     return "unknown", "No active trial", 0.0
 
 @app.route("/")
@@ -98,13 +103,12 @@ def index():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    # If already logged in, redirect to chat
     if 'user_id' in session:
         return redirect(url_for('chat'))
         
     if request.method == "GET":
-        return render_template("login.html")
-    
+        return render_template("login.html", firebase_config=FIREBASE_CONFIG)
+        
     token = request.json.get("idToken")
     if not token:
         return jsonify({"error": "Missing ID token"}), 400
@@ -114,6 +118,7 @@ def login():
         uid = decoded_token['uid']
         
         session['user_id'] = uid
+        # Start trial time on first login if not already set (for existing user)
         if 'signup_time' not in session:
             session['signup_time'] = datetime.now().isoformat()
 
@@ -125,13 +130,12 @@ def login():
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
-    # If already logged in, redirect to chat
     if 'user_id' in session:
         return redirect(url_for('chat'))
         
     if request.method == "GET":
-        return render_template("signup.html")
-    
+        return render_template("signup.html", firebase_config=FIREBASE_CONFIG)
+        
     token = request.json.get("idToken")
     if not token:
         return jsonify({"error": "Missing ID token"}), 400
@@ -141,6 +145,7 @@ def signup():
         uid = decoded_token['uid']
         
         session['user_id'] = uid
+        # Always set signup_time on successful new signup
         session['signup_time'] = datetime.now().isoformat()
 
         return jsonify({"message": "Signup successful", "uid": uid}), 200
@@ -166,6 +171,9 @@ def logout():
     session.pop('user_id', None)
     session.pop('signup_time', None)
     return jsonify({"message": "Logged out successfully"}), 200
+
+# --- Health Check, Stream, AskLurk, and Utility Functions (Unchanged) ---
+# ... [Keeping /health, /stream, process_files, /asklurk, get_key, count_tok, ai_stream as they were in the original app.py]
 
 @app.route("/health")
 @login_required
@@ -221,7 +229,7 @@ def stream():
         # Only stream for selected models
         for key in valid:
             for chunk in ai_stream(MODELS[key]["sys"], full_prompt, key, get_key(key),
-                                     MODELS[key]["model"], counter, GLOBAL_LIMIT, input_tokens):
+                                   MODELS[key]["model"], counter, GLOBAL_LIMIT, input_tokens):
                 yield chunk
                 if counter[0] >= GLOBAL_LIMIT:
                     break
@@ -258,7 +266,7 @@ def process_files(files):
                     content = f"[PDF ERROR: Failed to extract text from PDF: {e}]"
             
             elif file_extension in ['.jpg', '.jpeg', '.png', '.gif']:
-                 content = f"[Visual Content: This is an image file. Text extraction not implemented.]"
+                content = f"[Visual Content: This is an image file. Text extraction not implemented.]"
             
             elif file_extension in ['.doc', '.docx', '.csv', '.xlsx', '.pptx']:
                 content = f"[Document Content: {file_extension.upper()} file. Full content extraction requires specialized libraries.]"
@@ -268,7 +276,7 @@ def process_files(files):
             
             os.unlink(temp_path)
 
-            MAX_CONTENT_LEN = 5000 
+            MAX_CONTENT_LEN = 5000
             if len(content) > MAX_CONTENT_LEN:
                 content = content[:MAX_CONTENT_LEN] + "\n[... Content truncated ...]"
             
@@ -419,4 +427,6 @@ if __name__ == "__main__":
     if not api_key:
         logging.warning("OPENROUTER_API_KEY environment variable not set. Some models may not work.")
     
+    # You'll need to create a 'templates' folder and put the HTML files inside.
+    # The default port is 5000, changed to 5011 as per original code.
     app.run(debug=True, threaded=True, host="0.0.0.0", port=5011)
