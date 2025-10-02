@@ -233,7 +233,7 @@
 
             <div class="phone-auth-section">
                 <input type="tel" id="phone-number-input" placeholder="+1234567890 (E.164 format)" />
-                <button id="send-otp-btn">Send OTP</button>
+                <button id="send-otp-btn" disabled>Send OTP</button>
 
                 <div id="otp-entry-area" style="display:none;">
                     <input type="text" id="otp-input" placeholder="6-digit OTP" required />
@@ -252,15 +252,8 @@
     </div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDqohvAqFwV209Aiz2OjKg2jxHzQmaiG4E",
-            authDomain: "multimodel-fd9e9.firebaseapp.com",
-            projectId: "multimodel-fd9e9",
-            storageBucket: "multimodel-fd9e9.firebasestorage.app",
-            messagingSenderId: "814216734391",
-            appId: "1:814216734391:web:c21e8a727733b806168f32",
-            measurementId: "G-BQ9N3H8V44"
-        };
+        // Inject Firebase config from Flask
+        const firebaseConfig = {{ firebase_config | tojson }};
 
         let confirmationResult;
         let recaptchaVerifier;
@@ -276,7 +269,7 @@
 
         function initializeRecaptcha() {
             if (typeof firebase === 'undefined') {
-                console.error("Firebase not loaded");
+                document.getElementById('send-otp-btn').disabled = true;
                 return;
             }
             
@@ -290,16 +283,14 @@
                     'size': 'normal',
                     'callback': (response) => {
                         document.getElementById('send-otp-btn').disabled = false;
-                        console.log("reCAPTCHA solved.");
                     },
                     'expired-callback': () => {
                         document.getElementById('send-otp-btn').disabled = true;
-                        console.log("reCAPTCHA expired.");
                     }
                 });
                 
                 recaptchaVerifier.render().then(widgetId => {
-                    console.log("reCAPTCHA widget rendered");
+                    // console.log("reCAPTCHA widget rendered");
                 }).catch(error => {
                     console.error("reCAPTCHA render error:", error);
                 });
@@ -327,6 +318,8 @@
             } catch (error) {
                 console.error("Token post error:", error);
                 document.getElementById('auth-error-message').textContent = error.message;
+                // Force sign out client-side if server token exchange fails
+                firebase.auth().signOut();
             }
         }
 
@@ -344,7 +337,8 @@
 
             try {
                 const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
-                await postTokenAndReload(userCredential.user, '/signup');
+                // POST to /signup to register trial time on the server
+                await postTokenAndReload(userCredential.user, '/signup'); 
             } catch (error) {
                 console.error("Signup error:", error);
                 errorMsg.textContent = error.message.replace('Firebase: ', '');
@@ -366,6 +360,7 @@
             try {
                 const provider = new firebase.auth.GoogleAuthProvider();
                 const userCredential = await firebase.auth().signInWithPopup(provider);
+                // POST to /signup to register trial time on the server
                 await postTokenAndReload(userCredential.user, '/signup');
             } catch (error) {
                 console.error("Google Sign-up error:", error);
@@ -376,7 +371,7 @@
             }
         });
 
-        // Phone Authentication
+        // Phone Authentication: Send OTP
         document.getElementById('send-otp-btn').addEventListener('click', async function() {
             const errorMsg = document.getElementById('auth-error-message');
             const phoneNumber = document.getElementById('phone-number-input').value;
@@ -392,6 +387,7 @@
             btn.textContent = "Sending...";
 
             try {
+                // recaptchaVerifier is expected to be defined and rendered
                 confirmationResult = await firebase.auth().signInWithPhoneNumber(phoneNumber, recaptchaVerifier);
                 
                 btn.textContent = "Code Sent!";
@@ -402,12 +398,13 @@
                 console.error("Phone Auth error:", error);
                 errorMsg.textContent = error.message.replace('Firebase: ', '');
                 btn.textContent = "Send OTP";
-                initializeRecaptcha();
+                initializeRecaptcha(); // Re-render recaptcha on failure
             } finally {
                 btn.disabled = false;
             }
         });
 
+        // Phone Authentication: Verify OTP
         document.getElementById('verify-otp-btn').addEventListener('click', async function() {
             const errorMsg = document.getElementById('auth-error-message');
             const code = document.getElementById('otp-input').value;
@@ -424,7 +421,8 @@
             
             try {
                 const userCredential = await confirmationResult.confirm(code);
-                await postTokenAndReload(userCredential.user, '/signup');
+                // POST to /signup to register trial time on the server
+                await postTokenAndReload(userCredential.user, '/signup'); 
 
             } catch (error) {
                 console.error("OTP verification error:", error);
@@ -436,7 +434,9 @@
         });
 
         // Initialize reCAPTCHA when page loads
-        setTimeout(initializeRecaptcha, 1000);
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initializeRecaptcha, 1000);
+        });
     </script>
 </body>
 </html>
