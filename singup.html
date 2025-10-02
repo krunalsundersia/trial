@@ -8,12 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background: linear-gradient(135deg, #000, #1a1a2e);
@@ -23,15 +18,7 @@
             align-items: center;
             justify-content: center;
         }
-
-        .auth-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            width: 100%;
-        }
-
+        .auth-container { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100%; }
         .auth-box {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -41,7 +28,6 @@
             width: 400px;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-
         .auth-box h2 {
             text-align: center;
             margin-bottom: 30px;
@@ -50,7 +36,6 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
         .auth-box input {
             width: 100%;
             padding: 15px;
@@ -62,17 +47,12 @@
             font-size: 1rem;
             transition: all 0.3s ease;
         }
-
         .auth-box input:focus {
             outline: none;
             border-color: #34C759;
             box-shadow: 0 0 10px rgba(52, 199, 89, 0.3);
         }
-
-        .auth-box input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
+        .auth-box input::placeholder { color: rgba(255, 255, 255, 0.6); }
         .auth-box button {
             width: 100%;
             padding: 15px;
@@ -86,61 +66,44 @@
             transition: all 0.3s ease;
             margin-bottom: 15px;
         }
-
         .auth-box button:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(52, 199, 89, 0.4);
         }
-
         .auth-box button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
-
         .auth-box button.google-btn {
             background: linear-gradient(135deg, #DB4437, #c23321);
         }
-
         .auth-box button.google-btn:hover {
             box-shadow: 0 5px 15px rgba(219, 68, 55, 0.4);
         }
-
         .auth-toggle {
             text-align: center;
             margin-top: 20px;
             color: rgba(255, 255, 255, 0.8);
         }
-
         .auth-toggle a {
             color: #34C759;
             text-decoration: none;
             font-weight: 600;
         }
-
-        .auth-toggle a:hover {
-            text-decoration: underline;
-        }
-
+        .auth-toggle a:hover { text-decoration: underline; }
         .divider {
             display: flex;
             align-items: center;
             margin: 25px 0;
             color: rgba(255, 255, 255, 0.6);
         }
-
-        .divider::before,
-        .divider::after {
+        .divider::before, .divider::after {
             content: "";
             flex: 1;
             border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         }
-
-        .divider span {
-            padding: 0 15px;
-            font-size: 0.9rem;
-        }
-
+        .divider span { padding: 0 15px; font-size: 0.9rem; }
         #auth-error-message {
             color: #ff6b6b;
             text-align: center;
@@ -148,17 +111,12 @@
             font-size: 0.9rem;
             min-height: 20px;
         }
-
         .phone-auth-section {
             margin-top: 20px;
             padding-top: 20px;
             border-top: 1px solid rgba(255, 255, 255, 0.2);
         }
-
-        .phone-auth-section input {
-            margin-bottom: 10px;
-        }
-
+        .phone-auth-section input { margin-bottom: 10px; }
         #otp-entry-area {
             margin-top: 15px;
             padding: 15px;
@@ -166,28 +124,21 @@
             border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
         #recaptcha-container {
             margin-top: 15px;
             display: flex;
             justify-content: center;
         }
-
         .back-home {
             text-align: center;
             margin-top: 20px;
         }
-
         .back-home a {
             color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
             font-size: 0.9rem;
         }
-
-        .back-home a:hover {
-            color: #34C759;
-        }
-
+        .back-home a:hover { color: #34C759; }
         .trial-info {
             background: rgba(52, 199, 89, 0.1);
             border: 1px solid rgba(52, 199, 89, 0.3);
@@ -196,10 +147,16 @@
             margin-bottom: 20px;
             text-align: center;
         }
-
-        .trial-info i {
-            color: #34C759;
-            margin-right: 8px;
+        .trial-info i { color: #34C759; margin-right: 8px; }
+        .verify-email-section {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .verify-email-section button {
+            background: linear-gradient(135deg, #34C759, #28A745);
+        }
+        .verify-email-section button:hover {
+            box-shadow: 0 5px 15px rgba(52, 199, 89, 0.4);
         }
     </style>
 </head>
@@ -207,44 +164,37 @@
     <div class="auth-container">
         <div class="auth-box">
             <h2>Create Account</h2>
-            
             <div class="trial-info">
                 <i class="fas fa-crown"></i>
                 <strong>7-Day Free Trial</strong> - Get full access to all AI models
             </div>
-            
             <form id="auth-form">
                 <input type="email" id="auth-email" placeholder="Email" required />
                 <input type="password" id="auth-password" placeholder="Password (min. 6 characters)" required />
                 <button type="submit" id="auth-submit-btn">Create Account</button>
             </form>
-
             <p class="auth-toggle">
                 Already have an account? <a href="/login">Login here</a>
             </p>
-
             <div class="divider">
                 <span>OR</span>
             </div>
-
             <button id="google-sign-in-btn" class="google-btn">
                 <i class="fab fa-google"></i> Sign up with Google
             </button>
-
             <div class="phone-auth-section">
                 <input type="tel" id="phone-number-input" placeholder="+1234567890 (E.164 format)" />
                 <button id="send-otp-btn" disabled>Send OTP</button>
-
                 <div id="otp-entry-area" style="display:none;">
                     <input type="text" id="otp-input" placeholder="6-digit OTP" required />
                     <button id="verify-otp-btn">Verify OTP & Sign Up</button>
                 </div>
-
                 <div id="recaptcha-container"></div>
             </div>
-
+            <div class="verify-email-section">
+                <button id="verify-email-btn">Resend Verification Email</button>
+            </div>
             <div id="auth-error-message"></div>
-
             <div class="back-home">
                 <a href="/">← Back to Home</a>
             </div>
@@ -252,12 +202,7 @@
     </div>
 
     <script>
-        // Inject Firebase config from Flask
         const firebaseConfig = {{ firebase_config | tojson }};
-
-        let confirmationResult;
-        let recaptchaVerifier;
-        
         if (typeof firebase !== 'undefined' && !firebase.apps.length) {
             try {
                 firebase.initializeApp(firebaseConfig);
@@ -267,34 +212,28 @@
             }
         }
 
+        let confirmationResult;
+        let recaptchaVerifier;
+
         function initializeRecaptcha() {
             if (typeof firebase === 'undefined') {
                 document.getElementById('send-otp-btn').disabled = true;
                 return;
             }
-            
             const recaptchaContainer = document.getElementById('recaptcha-container');
             if (!recaptchaContainer) return;
-            
             recaptchaContainer.innerHTML = '';
-            
             try {
                 recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
                     'size': 'normal',
-                    'callback': (response) => {
+                    'callback': () => {
                         document.getElementById('send-otp-btn').disabled = false;
                     },
                     'expired-callback': () => {
                         document.getElementById('send-otp-btn').disabled = true;
                     }
                 });
-                
-                recaptchaVerifier.render().then(widgetId => {
-                    // console.log("reCAPTCHA widget rendered");
-                }).catch(error => {
-                    console.error("reCAPTCHA render error:", error);
-                });
-                
+                recaptchaVerifier.render();
             } catch (error) {
                 console.error("reCAPTCHA initialization error:", error);
             }
@@ -302,65 +241,57 @@
 
         async function postTokenAndReload(user, endpoint) {
             try {
-                const idToken = await user.getIdToken();
+                const idToken = await user.getIdToken(true);
                 const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ idToken: idToken })
                 });
-                
                 if (!response.ok) {
                     const data = await response.json().catch(() => ({ error: 'Server error during authentication.' }));
                     throw new Error(data.error || "Server authentication failed.");
                 }
-                
                 window.location.href = '/';
             } catch (error) {
                 console.error("Token post error:", error);
                 document.getElementById('auth-error-message').textContent = error.message;
-                // Force sign out client-side if server token exchange fails
                 firebase.auth().signOut();
             }
         }
 
-        // Email/Password Sign Up
         document.getElementById('auth-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
             const submitBtn = document.getElementById('auth-submit-btn');
             const errorMsg = document.getElementById('auth-error-message');
-            
             errorMsg.textContent = '';
             submitBtn.disabled = true;
             submitBtn.textContent = 'Creating Account...';
-
             try {
                 const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
-                // POST to /signup to register trial time on the server
-                await postTokenAndReload(userCredential.user, '/signup'); 
+                await userCredential.user.sendEmailVerification();
+                errorMsg.textContent = 'Account created! Please verify your email to continue.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Account';
             } catch (error) {
                 console.error("Signup error:", error);
                 errorMsg.textContent = error.message.replace('Firebase: ', '');
-            } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Create Account';
             }
         });
 
-        // Google Sign Up
         document.getElementById('google-sign-in-btn').addEventListener('click', async function() {
             const btn = this;
             const errorMsg = document.getElementById('auth-error-message');
-            
             errorMsg.textContent = '';
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing up...';
-
             try {
                 const provider = new firebase.auth.GoogleAuthProvider();
+                provider.addScope('email');
                 const userCredential = await firebase.auth().signInWithPopup(provider);
-                // POST to /signup to register trial time on the server
                 await postTokenAndReload(userCredential.user, '/signup');
             } catch (error) {
                 console.error("Google Sign-up error:", error);
@@ -371,72 +302,16 @@
             }
         });
 
-        // Phone Authentication: Send OTP
         document.getElementById('send-otp-btn').addEventListener('click', async function() {
             const errorMsg = document.getElementById('auth-error-message');
             const phoneNumber = document.getElementById('phone-number-input').value;
-            
-            if (!phoneNumber) { 
-                errorMsg.textContent = "Please enter a phone number."; 
-                return; 
+            if (!phoneNumber) {
+                errorMsg.textContent = "Please enter a phone number.";
+                return;
             }
-
             const btn = this;
             errorMsg.textContent = '';
             btn.disabled = true;
             btn.textContent = "Sending...";
-
             try {
-                // recaptchaVerifier is expected to be defined and rendered
-                confirmationResult = await firebase.auth().signInWithPhoneNumber(phoneNumber, recaptchaVerifier);
-                
-                btn.textContent = "Code Sent!";
-                document.getElementById('otp-entry-area').style.display = 'block';
-                errorMsg.textContent = "Verification code sent. Enter it above.";
-
-            } catch (error) {
-                console.error("Phone Auth error:", error);
-                errorMsg.textContent = error.message.replace('Firebase: ', '');
-                btn.textContent = "Send OTP";
-                initializeRecaptcha(); // Re-render recaptcha on failure
-            } finally {
-                btn.disabled = false;
-            }
-        });
-
-        // Phone Authentication: Verify OTP
-        document.getElementById('verify-otp-btn').addEventListener('click', async function() {
-            const errorMsg = document.getElementById('auth-error-message');
-            const code = document.getElementById('otp-input').value;
-            
-            if (!code || !confirmationResult) { 
-                errorMsg.textContent = "Please enter the OTP."; 
-                return; 
-            }
-
-            const btn = this;
-            errorMsg.textContent = '';
-            btn.disabled = true;
-            btn.textContent = "Verifying...";
-            
-            try {
-                const userCredential = await confirmationResult.confirm(code);
-                // POST to /signup to register trial time on the server
-                await postTokenAndReload(userCredential.user, '/signup'); 
-
-            } catch (error) {
-                console.error("OTP verification error:", error);
-                errorMsg.textContent = "Invalid OTP or session expired. Please try again.";
-                btn.textContent = "Verify OTP & Sign Up";
-            } finally {
-                btn.disabled = false;
-            }
-        });
-
-        // Initialize reCAPTCHA when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(initializeRecaptcha, 1000);
-        });
-    </script>
-</body>
-</html>
+                confirmation
